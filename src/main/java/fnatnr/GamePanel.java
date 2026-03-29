@@ -12,9 +12,6 @@ import java.util.List;
 
 public class GamePanel extends JPanel implements ActionListener {
 
-	public static final int WIDTH = 1024;
-	public static final int HEIGHT = 768;
-
 	private static final int TICK_RATE_MS = 1000;
 	private javax.swing.Timer gameLoop = new Timer(500, this);
 
@@ -40,7 +37,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	private Image doorImage = new ImageIcon("assets/door.png").getImage();
 
 	public GamePanel() {
-		setPreferredSize(new Dimension(WIDTH, HEIGHT));
+		setPreferredSize(new Dimension(1024, 768));
 		setBackground(Color.BLACK);
 		setFocusable(true);
 
@@ -51,7 +48,7 @@ public class GamePanel extends JPanel implements ActionListener {
 			}
 		});
 
-		this.sink = new Sink(50, 1, 7);
+		this.sink = new Sink(50, 1, 1);
 
 		createRooms();
 		createEnemys(sink);
@@ -65,7 +62,6 @@ public class GamePanel extends JPanel implements ActionListener {
 		Room nathan = new Room("Nathan Room", "assets/rooms/nathanRoom.png");
 		Room jack = new Room("Jack Room", "assets/rooms/jackRoom.png");
 		Room kazuma = new Room("Kazuma Cove", "assets/rooms/kazumaRoom.png");
-
 		Room hall = new Room("Hall", "assets/rooms/hall.png");
 		Room stairs = new Room("Stairs", "assets/rooms/stairs.png");
 		Room doorway = new Room("Doorway", "assets/rooms/doorway.png");
@@ -75,7 +71,6 @@ public class GamePanel extends JPanel implements ActionListener {
 		stairs.setNeighbours(new Room[] { doorway, hall, kazuma });
 		doorway.setNeighbours(new Room[] { kitchen, stairs, kazuma });
 		kitchen.setNeighbours(new Room[] { doorway, hall });
-
 		victor.setNeighbours(new Room[] { hall });
 		cayden.setNeighbours(new Room[] { hall });
 		josh.setNeighbours(new Room[] { hall });
@@ -84,32 +79,12 @@ public class GamePanel extends JPanel implements ActionListener {
 		kazuma.setNeighbours(new Room[] { doorway, stairs });
 
 		rooms = new Room[] { victor, cayden, josh, nathan, jack, kazuma, hall, stairs, doorway, kitchen };
-
 	}
 
 	private void createEnemys(Sink sink) {
-
 		enemys = new ArrayList<>();
-
 		Enemy test = new ClassicEnemy("cheese", 10, rooms[2], rooms);
 		enemys.add(test);
-
-	}
-
-	private void updateEnemies() {
-
-		for (Enemy enemy : enemys) {
-			enemy.chanceMove();
-		}
-
-	}
-
-	private void drawEnemies(Graphics g) {
-		for (Enemy enemy : enemys) {
-			if (rooms[selectedCamera] == enemy.getRoom()) {
-				enemy.drawSprite(g);
-			}
-		}
 	}
 
 	@Override
@@ -117,7 +92,9 @@ public class GamePanel extends JPanel implements ActionListener {
 		if (gameOver)
 			return;
 
-		updateEnemies();
+		for (Enemy enemy : enemys) {
+			enemy.chanceMove();
+		}
 		sink.update();
 
 		repaint();
@@ -139,11 +116,11 @@ public class GamePanel extends JPanel implements ActionListener {
 				break;
 			case SINK:
 				drawSink(g);
-				sink.clean();
 				drawStatusBar(g);
 				break;
 			case DOOR:
 				drawDoorway(g);
+				drawStatusBar(g);
 				break;
 			case CAMERAS:
 				drawCameras(g);
@@ -155,82 +132,62 @@ public class GamePanel extends JPanel implements ActionListener {
 
 	private void drawTable(Graphics g) {
 		g.setColor(new Color(30, 20, 10));
-		g.fillRect(0, 0, WIDTH, HEIGHT);
-
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 16));
-		g.drawString("TABLE VIEW", 20, 30);
-
-		g.drawImage(tableImage, 0, 0, WIDTH, HEIGHT, this);
+		g.fillRect(0, 0, getWidth(), getHeight());
+		g.drawImage(tableImage, 0, 0, getWidth(), getHeight(), this);
 	}
 
 	private void drawSink(Graphics g) {
 		g.setColor(new Color(30, 20, 10));
-		g.fillRect(0, 0, WIDTH, HEIGHT);
-
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 16));
-		g.drawString("SINK VIEW", 20, 30);
-
-		g.drawImage(sinkImage, 0, 0, WIDTH, HEIGHT, this);
+		g.fillRect(0, 0, getWidth(), getHeight());
+		g.drawImage(sinkImage, 0, 0, getWidth(), getHeight(), this);
 	}
 
 	private void drawDoorway(Graphics g) {
 		g.setColor(new Color(30, 20, 10));
-		g.fillRect(0, 0, WIDTH, HEIGHT);
+		g.fillRect(0, 0, getWidth(), getHeight());
+		g.drawImage(doorImage, 0, 0, getWidth(), getHeight(), this);
 
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 16));
-		g.drawString("DOOR VIEW", 20, 30);
-
-		g.drawImage(doorImage, 0, 0, WIDTH, HEIGHT, this);
+		g.setColor(leftDoorClosed ? Color.RED : Color.GREEN);
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.04)));
+		String status = leftDoorClosed ? "DOOR CLOSED" : "DOOR OPEN";
+		int sw = g.getFontMetrics().stringWidth(status);
+		g.drawString(status, (getWidth() - sw) / 2, (int) (getHeight() * 0.1));
 	}
 
 	private void drawCameras(Graphics g) {
 		g.setColor(new Color(10, 30, 10));
-		g.fillRect(0, 0, WIDTH, HEIGHT);
+		g.fillRect(0, 0, getWidth(), getHeight());
 
 		Room room = rooms[selectedCamera];
-
-		g.drawImage(room.getImage(), 0, 0, WIDTH, HEIGHT, this);
+		g.drawImage(room.getImage(), 0, 0, getWidth(), getHeight(), this);
 
 		g.setColor(Color.GREEN);
-		g.setFont(new Font("Monospaced", Font.BOLD, 18));
-		g.drawString(room.getName(), 20, 30);
-
-		g.setColor(new Color(0, 0, 0, 180));
-		g.fillRect(0, HEIGHT - 50, WIDTH, 50);
-		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 13));
-
-		for (int i = 0; i < rooms.length; i++) {
-			int x = 10 + i * 100;
-			g.setColor(i == selectedCamera ? Color.GREEN : Color.GRAY);
-			g.drawString("[" + (i + 1) + "] " + rooms[i].getName().substring(0, Math.min(7, rooms[i].getName().length())), x,
-					HEIGHT - 40);
-		}
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.025)));
+		g.drawString(room.getName(), (int) (getWidth() * 0.02), (int) (getHeight() * 0.05));
 
 		drawEnemies(g);
 	}
 
 	private void drawStatusBar(Graphics g) {
-		int barY = (int) (getHeight() * 0.05);
 		int barX = (int) (getWidth() * 0.75);
+		int barY = (int) (getHeight() * 0.05);
 		int barW = (int) (getWidth() * 0.2);
 		int barH = (int) (getHeight() * 0.03);
+		int pad = (int) (getWidth() * 0.01);
+		int fontSize = (int) (getHeight() * 0.018);
 
 		g.setColor(new Color(0, 0, 0, 180));
-		g.fillRoundRect(barX - 10, barY - 20, barW + 20, barH + 30, 10, 10);
+		g.fillRoundRect(barX - pad, barY - fontSize - pad, barW + pad * 2, barH + fontSize + pad * 3, 10, 10);
 
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.018)));
-		g.drawString("SINK", barX, barY - 4);
+		g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
+		g.drawString("SINK", barX, barY - (int) (pad * 0.5));
 
-		g.setColor(Color.DARK_GRAY);
-		g.fillRect(barX, barY, barW, barH);
 
 		float pct = Math.min(1.0f, Math.max(0.0f, sink.getLevel()));
-		g.setColor(new Color(pct, 1 - pct, 0f));
+		int red = (int) (255 * pct);
+		int green = (int) (255 * (1 - pct));
+		g.setColor(new Color(red, green, 0));
 		g.fillRect(barX, barY, (int) (barW * pct), barH);
 
 		g.setColor(Color.WHITE);
@@ -239,65 +196,83 @@ public class GamePanel extends JPanel implements ActionListener {
 		if (sink.getStatus()) {
 			if ((System.currentTimeMillis() / 500) % 2 == 0) {
 				g.setColor(Color.RED);
-				g.drawString("CLEAN SINK!", barX, barY + barH + 16);
+				g.drawString("CLEAN SINK!", barX, barY + barH + fontSize + pad);
 			}
 		}
 	}
 
 	private void drawHUD(Graphics g) {
+		int hudH = (int) (getHeight() * 0.05);
+		int fontSize = (int) (getHeight() * 0.018);
+		int textY = getHeight() - (int) ((hudH - fontSize) * 0.5);
+
 		g.setColor(new Color(0, 0, 0, 160));
-		g.fillRect(0, HEIGHT - 40, WIDTH, 40);
+		g.fillRect(0, getHeight() - hudH, getWidth(), hudH);
 
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 13));
+		g.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
 
 		switch (currentScreen) {
 			case TABLE:
-				g.drawString("[C] Cameras [D] Doorway [S] Clean Sink [T] Table", 10,
-						HEIGHT - 14);
+				g.drawString("[C] Cameras   [D] Doorway   [S] Sink", (int) (getWidth() * 0.01), textY);
 				break;
 			case SINK:
-				g.drawString("[T] Table", 10,
-						HEIGHT - 14);
+				g.drawString("[F] Clean   [T] Back to Table", (int) (getWidth() * 0.01), textY);
 				break;
 			case DOOR:
-				g.drawString("[Q] Close Door [T] Table", 10,
-						HEIGHT - 14);
+				g.drawString("[Q] Toggle Door   [T] Back to Table", (int) (getWidth() * 0.01), textY);
 				break;
 			case CAMERAS:
-				g.drawString("[C] Put away camera", 10,
-						HEIGHT - 14);
+				g.drawString("[C] Put Away Camera   [LEFT] [RIGHT] Switch Room", (int) (getWidth() * 0.01), textY);
 				break;
 		}
 	}
 
 	private void drawGameOver(Graphics g) {
 		g.setColor(Color.BLACK);
-		g.fillRect(0, 0, WIDTH, HEIGHT);
+		g.fillRect(0, 0, getWidth(), getHeight());
+
 		g.setColor(Color.RED);
-		g.setFont(new Font("Monospaced", Font.BOLD, 60));
-		g.drawString("GAME OVER", WIDTH / 2 - 200, HEIGHT / 2);
-		g.setFont(new Font("Monospaced", Font.PLAIN, 24));
-		g.drawString("Got you: " + lastKiller, WIDTH / 2 - 120, HEIGHT / 2 + 50);
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.08)));
+		String title = "GAME OVER";
+		int tw = g.getFontMetrics().stringWidth(title);
+		g.drawString(title, (getWidth() - tw) / 2, (int) (getHeight() * 0.45));
+
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.03)));
+		String sub = "Got you: " + lastKiller;
+		int sw = g.getFontMetrics().stringWidth(sub);
+		g.drawString(sub, (getWidth() - sw) / 2, (int) (getHeight() * 0.55));
+	}
+
+	private void drawEnemies(Graphics g) {
+		for (Enemy enemy : enemys) {
+			if (rooms[selectedCamera] == enemy.getRoom()) {
+				enemy.drawSprite(g);
+			}
+		}
 	}
 
 	private void handleKeyPress(int key) {
+		leftDoorClosed = false;
 		switch (key) {
 			case KeyEvent.VK_C:
 				if (currentScreen == Screen.TABLE)
 					currentScreen = Screen.CAMERAS;
-				else if (currentScreen == Screen.CAMERAS) {
+				else if (currentScreen == Screen.CAMERAS)
 					currentScreen = Screen.TABLE;
-				}
 				break;
 			case KeyEvent.VK_Q:
 				if (currentScreen == Screen.DOOR)
 					leftDoorClosed = !leftDoorClosed;
 				break;
 			case KeyEvent.VK_S:
-				if (currentScreen == Screen.TABLE) {
+				if (currentScreen == Screen.TABLE)
 					currentScreen = Screen.SINK;
-				}
+				break;
+			case KeyEvent.VK_F:
+				if (currentScreen == Screen.SINK)
+					sink.clean();
 				break;
 			case KeyEvent.VK_T:
 				currentScreen = Screen.TABLE;
@@ -327,6 +302,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	private void triggerGameOver(String killerName) {
 		gameOver = true;
 		lastKiller = killerName;
+		gameLoop.stop();
 		repaint();
 	}
 
