@@ -36,7 +36,12 @@ public class GamePanel extends JPanel implements ActionListener {
 	private Image sinkImage = new ImageIcon("assets/sink.png").getImage();
 	private Image doorImage = new ImageIcon("assets/door.png").getImage();
 
-	public GamePanel() {
+	public int night;
+	public Runnable onNightComplete;
+
+	public GamePanel(int night, Runnable onComplete) {
+		this.night = night;
+		this.onNightComplete = onComplete;
 		setPreferredSize(new Dimension(1024, 768));
 		setBackground(Color.BLACK);
 		setFocusable(true);
@@ -182,7 +187,6 @@ public class GamePanel extends JPanel implements ActionListener {
 		g.setColor(Color.WHITE);
 		g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
 		g.drawString("SINK", barX, barY - (int) (pad * 0.5));
-
 
 		float pct = Math.min(1.0f, Math.max(0.0f, sink.getLevel()));
 		int red = (int) (255 * pct);
