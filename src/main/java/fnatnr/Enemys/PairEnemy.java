@@ -4,16 +4,22 @@ import fnatnr.Room;
 import fnatnr.GamePanel;
 import fnatnr.GameRandom;
 
+import javax.swing.ImageIcon;
 public class PairEnemy extends Enemy {
 
 	private boolean paried = false;
 
-	public PairEnemy(String name, int agression, Room currentRoom, GamePanel gamePanel) {
+	public PairEnemy(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel) {
 		this.name = name;
 		this.agression = agression;
 		this.currentRoom = currentRoom;
 		this.homeRoom = currentRoom;
-		this.gamePanel = gamePanel; 
+		this.gamePanel = gamePanel;
+
+		for (Room room : rooms) {
+			this.spriteData.put(room, new EnemyRoomData(50, 50, 100, 100, new ImageIcon("assets/cheese.png").getImage()));
+		}
+
 	}
 
 	@Override
@@ -31,5 +37,4 @@ public class PairEnemy extends Enemy {
 		}
 	}
 
-	
 }

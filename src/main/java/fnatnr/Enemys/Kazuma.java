@@ -19,11 +19,13 @@ public class Kazuma extends Enemy {
 
 	private boolean beingWatched = false;
 
-	public Kazuma(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel) {
+	public Kazuma(String name, int agression, Room currentRoom,  GamePanel gamePanel) {
 		this.name = name;
 		this.agression = agression;
 		this.currentRoom = currentRoom;
 		this.gamePanel = gamePanel;
+		
+		this.spriteData.put(currentRoom, new EnemyRoomData(50, 50, 100, 100, new ImageIcon("assets/cheese.png").getImage()));
 	}
 
 	public int getState() {

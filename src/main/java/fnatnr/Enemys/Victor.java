@@ -22,6 +22,8 @@ public class Victor extends Enemy {
 		this.sink = sink;
 		this.currentRoom = room;
 		this.gamePanel = gamePanel;
+
+		this.spriteData.put(room, new EnemyRoomData(50, 50, 100, 100, new ImageIcon("assets/cheese.png").getImage()));
 	}
 	
 
@@ -29,7 +31,7 @@ public class Victor extends Enemy {
 	public void chanceMove() {
 		sink.getLevel();
 
-		if (sink.getStatus()) {
+ 	if (sink.getStatus()) {
 			time++;
 			if (time > 4) {
 				gamePanel.triggerGameOver(this.name);

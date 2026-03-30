@@ -14,6 +14,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
 	private static final int TICK_RATE_MS = 1000;
 	private javax.swing.Timer gameLoop = new Timer(500, this);
+	private javax.swing.Timer renderLoop = new Timer(32, e -> repaint());
 
 	public enum Screen {
 		TABLE, CAMERAS, SINK, DOOR
@@ -73,6 +74,7 @@ public class GamePanel extends JPanel implements ActionListener {
 		createRooms();
 		createEnemys(data, sink);
 		gameLoop.start();
+		renderLoop.start();
 	}
 
 	public boolean getDoorClosed() {
@@ -113,10 +115,10 @@ public class GamePanel extends JPanel implements ActionListener {
 		Enemy jack = new ClassicEnemy("Jack", data.enemyAgressions[0], rooms[4], rooms, this);
 		Enemy nathan = new ClassicEnemy("Nathan", data.enemyAgressions[1], rooms[3], rooms, this);
 		
-		Enemy cayden = new PairEnemy("Cayden", data.enemyAgressions[2], rooms[1],  this);
-		Enemy josh = new PairEnemy("Josh", data.enemyAgressions[3], rooms[2],  this);
+		Enemy cayden = new PairEnemy("Cayden", data.enemyAgressions[2], rooms[1], rooms,  this);
+		Enemy josh = new PairEnemy("Josh", data.enemyAgressions[3], rooms[2], rooms, this);
 
-		Enemy kazuma = new Kazuma("Kazuma", data.enemyAgressions[4], rooms[5], rooms, this);
+		Enemy kazuma = new Kazuma("Kazuma", data.enemyAgressions[4], rooms[5], this);
 
 		Enemy victor = new Victor("Victor", sink, rooms[9], this);
 
@@ -390,15 +392,6 @@ public class GamePanel extends JPanel implements ActionListener {
 				if (currentScreen == Screen.CAMERAS)
 					selectedCamera = (selectedCamera + 1) % cameraRooms.length;
 				break;
-			case KeyEvent.VK_:
-				if (gameOver || nightComplete) {
-					if (onNightComplete != null && nightComplete) {
-						SwingUtilities.invokeLater(onNightComplete::run);
-					} else {
-						SwingUtilities.invokeLater(onGameOver::run);
-					}
-				}
-				break;
 		}
 		repaint();
 	}
@@ -423,12 +416,14 @@ public class GamePanel extends JPanel implements ActionListener {
 		gameOver = true;
 		lastKiller = killerName;
 		gameLoop.stop();
+		renderLoop.stop();
 		repaint();
 	}
 
 	private void triggerWin() {
 		nightComplete = true;
 		gameLoop.stop();
+		renderLoop.stop();
 		repaint();
 	}
 
