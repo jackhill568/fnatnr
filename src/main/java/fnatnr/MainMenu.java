@@ -3,23 +3,36 @@ package fnatnr;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
+import java.util.List;
 
 public class MainMenu extends JPanel implements MouseListener {
 
 	private static final int TOTAL_NIGHTS = 5;
 
-	private int nightsUnlocked = 1;
+	public enum MenuState {
+		MAIN,
+		NIGHT_SELECT
+	}
+
+	private MenuState state = MenuState.MAIN;
+	private int nightsUnlocked;
+	private int hoveredButton = -1;
 
 	private Image backgroundImage = new ImageIcon("assets/menu_background.png").getImage();
 
-	private Rectangle[] nightButtons = new Rectangle[TOTAL_NIGHTS];
-	private Rectangle settingsButton;
-	private Rectangle exitButton;
+	private Rectangle btnContinue;
+	private Rectangle btnNewGame;
+	private Rectangle btnSettings;
+	private Rectangle btnExit;
 
-	private int hoveredButton = -1; // -1 = none, 0-4 = nights, 5 = settings, 6 = exit
+	private Rectangle[] nightButtons = new Rectangle[TOTAL_NIGHTS];
+	private Rectangle btnBack;
 
 	public interface MenuListener {
-		void onNightSelected(int night);
+		void onNewGame();
+
+		void onContinue(int night);
 
 		void onSettingsClicked();
 
@@ -43,112 +56,158 @@ public class MainMenu extends JPanel implements MouseListener {
 		});
 	}
 
-	private void layoutButtons() {
-		int btnW = (int) (getWidth() * 0.25);
+	private void layoutMain() {
+		int btnW = (int) (getWidth() * 0.22);
 		int btnH = (int) (getHeight() * 0.07);
-		int btnX = (int) (getWidth() * 0.375);
+		int btnX = (int) (getWidth() * 0.06);
+		int gap = (int) (getHeight() * 0.03);
 
-		int startY = (int) (getHeight() * 0.25);
-		int gapY = (int) (getHeight() * 0.1);
+		int startY = (int) (getHeight() * 0.35);
+		btnContinue = new Rectangle(btnX, startY, btnW, btnH);
+		btnNewGame = new Rectangle(btnX, startY + (btnH + gap), btnW, btnH);
+		btnSettings = new Rectangle(btnX, startY + (btnH + gap) * 2, btnW, btnH);
+		btnExit = new Rectangle(btnX, startY + (btnH + gap) * 3, btnW, btnH);
+	}
+
+	private void layoutNightSelect() {
+		int btnW = (int) (getWidth() * 0.22);
+		int btnH = (int) (getHeight() * 0.07);
+		int btnX = (int) (getWidth() * 0.06);
+		int gap = (int) (getHeight() * 0.025);
+
+		int startY = (int) (getHeight() * 0.2);
 		for (int i = 0; i < TOTAL_NIGHTS; i++) {
-			nightButtons[i] = new Rectangle(btnX, startY + i * gapY, btnW, btnH);
+			nightButtons[i] = new Rectangle(btnX, startY + i * (btnH + gap), btnW, btnH);
 		}
-
-		int bottomY = (int) (getHeight() * 0.82);
-		int halfW = (int) (getWidth() * 0.12);
-		settingsButton = new Rectangle((int) (getWidth() * 0.33) - halfW, bottomY, halfW * 2, btnH);
-		exitButton = new Rectangle((int) (getWidth() * 0.67) - halfW, bottomY, halfW * 2, btnH);
+		btnBack = new Rectangle(btnX, (int) (getHeight() * 0.85), btnW, btnH);
 	}
 
 	@Override
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		layoutButtons();
 
-		if (backgroundImage != null) {
-			g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-		} else {
-			g.setColor(new Color(10, 5, 5));
-			g.fillRect(0, 0, getWidth(), getHeight());
-		}
+		g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
 
-		g.setColor(new Color(0, 0, 0, 120));
+		g.setColor(new Color(0, 0, 0, 160));
 		g.fillRect(0, 0, getWidth(), getHeight());
 
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.03)));
-		String title = "SELECT NIGHT";
-		int tw = g.getFontMetrics().stringWidth(title);
-		g.drawString(title, (getWidth() - tw) / 2, (int) (getHeight() * 0.18));
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.06)));
+		String title = "Five Nights at 290 Renfrew";
+		g.drawString(title, (int) (getWidth() * 0.06), (int) (getHeight() * 0.22));
+
+		g.setColor(new Color(200, 200, 200, 120));
+		g.fillRect((int) (getWidth() * 0.06), (int) (getHeight() * 0.26), (int) (getWidth() * 0.4), 2);
+
+		switch (state) {
+			case MAIN:
+				drawMain(g);
+				break;
+			case NIGHT_SELECT:
+				drawNightSelect(g);
+				break;
+		}
+	}
+
+	private void drawMain(Graphics g) {
+		layoutMain();
+
+		boolean hasSave = nightsUnlocked > 1;
+
+		drawMenuButton(g, btnContinue, "Continue", 0, !hasSave); // greyed if no save
+		drawMenuButton(g, btnNewGame, "New Game", 1, false);
+		drawMenuButton(g, btnSettings, "Settings", 2, false);
+		drawMenuButton(g, btnExit, "Exit", 3, false);
+
+		if (!hasSave) {
+			g.setColor(Color.GRAY);
+			g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.018)));
+			g.drawString("No save found", btnContinue.x, btnContinue.y + btnContinue.height + (int) (getHeight() * 0.025));
+		}
+	}
+
+	private void drawNightSelect(Graphics g) {
+		layoutNightSelect();
+
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.035)));
+		g.drawString("Select Night", (int) (getWidth() * 0.06), (int) (getHeight() * 0.16));
 
 		for (int i = 0; i < TOTAL_NIGHTS; i++) {
-			drawNightButton(g, i);
+			boolean unlocked = i < nightsUnlocked;
+			boolean hovered = hoveredButton == 10 + i;
+			Rectangle btn = nightButtons[i];
+
+			if (!unlocked)
+				g.setColor(new Color(30, 30, 30, 180));
+			else if (hovered)
+				g.setColor(new Color(180, 120, 0, 220));
+			else
+				g.setColor(new Color(80, 55, 0, 180));
+			g.fillRoundRect(btn.x, btn.y, btn.width, btn.height, 10, 10);
+
+			g.setColor(unlocked ? Color.ORANGE : Color.DARK_GRAY);
+			g.drawRoundRect(btn.x, btn.y, btn.width, btn.height, 10, 10);
+
+			int fontSize = (int) (btn.height * 0.38);
+			g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
+			FontMetrics fm = g.getFontMetrics();
+			String label = "Night " + (i + 1) + (unlocked ? "" : "  [LOCKED]");
+			while (fm.stringWidth(label) > btn.width - 16 && fontSize > 6) {
+				fontSize--;
+				g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
+				fm = g.getFontMetrics();
+			}
+			g.setColor(unlocked ? Color.WHITE : Color.GRAY);
+			g.drawString(label, btn.x + 10, btn.y + (btn.height + fontSize) / 2 - 2);
 		}
 
-		drawButton(g, settingsButton, "SETTINGS", 5, false);
-
-		drawButton(g, exitButton, "EXIT", 6, false);
+		drawMenuButton(g, btnBack, "Back", 20, false);
 	}
 
-	private void drawNightButton(Graphics g, int index) {
-		boolean unlocked = index < nightsUnlocked;
-		boolean hovered = hoveredButton == index;
-		Rectangle btn = nightButtons[index];
+	private void drawMenuButton(Graphics g, Rectangle btn, String label, int id, boolean disabled) {
+		boolean hovered = hoveredButton == id && !disabled;
 
-		if (!unlocked) {
-			g.setColor(new Color(40, 40, 40, 180));
-		} else if (hovered) {
-			g.setColor(new Color(180, 120, 0, 220));
-		} else {
-			g.setColor(new Color(100, 60, 0, 180));
-		}
-		g.fillRoundRect(btn.x, btn.y, btn.width, btn.height, 12, 12);
+		if (disabled)
+			g.setColor(new Color(30, 30, 30, 150));
+		else if (hovered)
+			g.setColor(new Color(80, 80, 80, 220));
+		else
+			g.setColor(new Color(20, 20, 20, 180));
+		g.fillRoundRect(btn.x, btn.y, btn.width, btn.height, 10, 10);
 
-		g.setColor(unlocked ? Color.ORANGE : Color.DARK_GRAY);
-		g.drawRoundRect(btn.x, btn.y, btn.width, btn.height, 12, 12);
+		g.setColor(disabled ? Color.DARK_GRAY : hovered ? Color.WHITE : new Color(150, 150, 150));
+		g.drawRoundRect(btn.x, btn.y, btn.width, btn.height, 10, 10);
 
-		int fontSize = (int) (btn.height * 0.30);
+		int fontSize = (int) (btn.height * 0.38);
 		g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
-		String label = unlocked ? "Night " + (index + 1) : "Night " + (index + 1) + "  [LOCKED]";
-		g.setColor(unlocked ? Color.WHITE : Color.GRAY);
-		int lw = g.getFontMetrics().stringWidth(label);
-		g.drawString(label, btn.x + (btn.width - lw) / 2, btn.y + (btn.height + fontSize) / 2 - 2);
-	}
-
-	private void drawButton(Graphics g, Rectangle btn, String label, int id, boolean destructive) {
-		boolean hovered = hoveredButton == id;
-
-		if (hovered) {
-			g.setColor(destructive ? new Color(160, 30, 30, 220) : new Color(60, 60, 60, 220));
-		} else {
-			g.setColor(destructive ? new Color(80, 20, 20, 180) : new Color(30, 30, 30, 180));
-		}
-		g.fillRoundRect(btn.x, btn.y, btn.width, btn.height, 12, 12);
-
-		g.setColor(hovered ? Color.WHITE : Color.GRAY);
-		g.drawRoundRect(btn.x, btn.y, btn.width, btn.height, 12, 12);
-
-		int fontSize = (int) (getHeight() * 0.025);
-		g.setFont(new Font("Monospaced", Font.BOLD, fontSize));
-		g.setColor(hovered ? Color.WHITE : Color.LIGHT_GRAY);
-		int lw = g.getFontMetrics().stringWidth(label);
-		g.drawString(label, btn.x + (btn.width - lw) / 2, btn.y + (btn.height + fontSize) / 2 - 2);
+		g.setColor(disabled ? Color.DARK_GRAY : hovered ? Color.WHITE : Color.LIGHT_GRAY);
+		g.drawString(label, btn.x + (int) (btn.width * 0.1), btn.y + (btn.height + fontSize) / 2 - 2);
 	}
 
 	private void updateHover(int mx, int my) {
 		int prev = hoveredButton;
 		hoveredButton = -1;
 
-		for (int i = 0; i < TOTAL_NIGHTS; i++) {
-			if (nightButtons[i] != null && nightButtons[i].contains(mx, my)) {
-				hoveredButton = i;
-				break;
+		if (state == MenuState.MAIN) {
+			layoutMain();
+			if (btnContinue != null && btnContinue.contains(mx, my) && nightsUnlocked > 1)
+				hoveredButton = 0;
+			if (btnNewGame != null && btnNewGame.contains(mx, my))
+				hoveredButton = 1;
+			if (btnSettings != null && btnSettings.contains(mx, my))
+				hoveredButton = 2;
+			if (btnExit != null && btnExit.contains(mx, my))
+				hoveredButton = 3;
+		} else {
+			layoutNightSelect();
+			for (int i = 0; i < TOTAL_NIGHTS; i++) {
+				if (nightButtons[i] != null && nightButtons[i].contains(mx, my) && i < nightsUnlocked)
+					hoveredButton = 10 + i;
 			}
+			if (btnBack != null && btnBack.contains(mx, my))
+				hoveredButton = 20;
 		}
-		if (settingsButton != null && settingsButton.contains(mx, my))
-			hoveredButton = 5;
-		if (exitButton != null && exitButton.contains(mx, my))
-			hoveredButton = 6;
 
 		if (hoveredButton != prev)
 			repaint();
@@ -158,28 +217,40 @@ public class MainMenu extends JPanel implements MouseListener {
 	public void mouseClicked(MouseEvent e) {
 		int mx = e.getX(), my = e.getY();
 
-		for (int i = 0; i < TOTAL_NIGHTS; i++) {
-			if (nightButtons[i] != null && nightButtons[i].contains(mx, my)) {
-				if (i < nightsUnlocked) {
-					listener.onNightSelected(i + 1);
-				}
+		if (state == MenuState.MAIN) {
+			layoutMain();
+			if (btnContinue.contains(mx, my) && nightsUnlocked > 1) {
+				state = MenuState.NIGHT_SELECT;
+				hoveredButton = -1;
+				repaint();
 				return;
 			}
+			if (btnNewGame.contains(mx, my)) {
+				listener.onNewGame();
+				return;
+			}
+			if (btnSettings.contains(mx, my)) {
+				listener.onSettingsClicked();
+				return;
+			}
+			if (btnExit.contains(mx, my)) {
+				listener.onExitClicked();
+				return;
+			}
+		} else {
+			layoutNightSelect();
+			for (int i = 0; i < TOTAL_NIGHTS; i++) {
+				if (nightButtons[i].contains(mx, my) && i < nightsUnlocked) {
+					listener.onContinue(i + 1);
+					return;
+				}
+			}
+			if (btnBack.contains(mx, my)) {
+				state = MenuState.MAIN;
+				hoveredButton = -1;
+				repaint();
+			}
 		}
-
-		if (settingsButton != null && settingsButton.contains(mx, my)) {
-			listener.onSettingsClicked();
-		}
-		if (exitButton != null && exitButton.contains(mx, my)) {
-			listener.onExitClicked();
-		}
-	}
-
-	public void unlockNextNight() {
-		if (nightsUnlocked < TOTAL_NIGHTS) {
-			nightsUnlocked++;
-		}
-		repaint();
 	}
 
 	public void setNightsUnlocked(int n) {

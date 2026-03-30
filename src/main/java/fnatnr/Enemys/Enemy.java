@@ -1,6 +1,7 @@
 package fnatnr.Enemys;
 
 import fnatnr.Room;
+import fnatnr.NightTools.NightTimer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.awt.Graphics;
 public abstract class Enemy {
 
 	protected Room currentRoom;
-	protected int agression; // 0 - 20
+	protected int aggression; 
 	protected String name;
 
 	protected Room homeRoom;
@@ -22,45 +23,49 @@ public abstract class Enemy {
 
 	protected Map<Room, EnemyRoomData> spriteData = new HashMap<>();
 
-	protected int tickFrame = 0;
+	protected int tickFrame = GameRandom.getInstance().nextInt(20);
 
-	public void nextRoom() {
-		Room[] neighbours = currentRoom.getNeighbours();
+public void nextRoom() {
+    Room[] neighbours = currentRoom.getNeighbours();
+    if (neighbours.length == 0) return;
 
-		if (neighbours.length == 0) {
-			System.out.println("TRIED TO MOVE IN A ROOM WITH NO NEIGHBOURS");
-			return;
-		}
+    if (GameRandom.getInstance().nextInt(20) < aggression - 5) {
+        currentRoom = neighbours[0];
+    } else {
+        currentRoom = neighbours[GameRandom.getInstance().nextInt(neighbours.length)]; 
+    }
+}
 
-		if (GameRandom.getInstance().nextInt(20) < agression - 5) {
-			currentRoom = neighbours[0];
-		} else {
-			currentRoom = neighbours[GameRandom.getInstance().nextInt(neighbours.length)];
-		}
+public void chanceMove() {
+    if (aggression == 0) return;
 
-		if (currentRoom.getName().equals("Kitchen")) {
-			attack();
-		}
-	}
+    tickFrame++;
 
-	public void chanceMove() {
-		if (agression == 0) {
-			return;
-		}
+    float nightProgress = NightTimer.getInstance().getProgress(); 
+    int effectiveAggression = (int)(aggression + (nightProgress * 8));
+    effectiveAggression = Math.min(20, effectiveAggression); 
 
-		int rand = GameRandom.getInstance().nextInt(20);
-		tickFrame++;
+    if (currentRoom.getName().equals("Doorway") && gamePanel.getDoorClosed()) {
+        if (tickFrame > 10) {
+            tickFrame = 0;
+            currentRoom = homeRoom;
+        }
+        return;
+    }
 
-		if (currentRoom.getName().equals("Doorway") && gamePanel.getDoorClosed()) {
-			if (tickFrame > 10) { // after 10 frames of closing door go home + play aduio que here
-				currentRoom = homeRoom;
-			}
-		} else if (agression > rand && tickFrame > (40 - agression)) {
-			tickFrame = 0;
-			nextRoom();
-		}
+    int moveThreshold = Math.max(1, 40 - (effectiveAggression * 2));
+    if (tickFrame >= moveThreshold) {
+        tickFrame = 0;
+        nextRoom();
+        checkAttack();
+    }
+}
 
-	}
+protected void checkAttack() {
+    if (currentRoom.getName().equals("Kitchen")) {
+        attack();
+    }
+}
 
 	public void attack() {
 		this.gamePanel.triggerGameOver(this.name);

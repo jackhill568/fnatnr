@@ -1,4 +1,4 @@
-package fnatnr;
+package fnatnr.NightTools;
 
 public class NightTimer {
 
@@ -6,11 +6,19 @@ public class NightTimer {
     private static final int START_HOUR    = 0; 
 
     private int minutesElapsed = 0;
-    private int ticksPerMinute; 
+    private static final int ticksPerMinute = 2; 
 
-    public NightTimer(int ticksPerMinute) {
-        this.ticksPerMinute = ticksPerMinute;
+		private static NightTimer instance;
+
+    private NightTimer() {
     }
+
+		public static NightTimer getInstance() {
+			if (instance == null) {
+				instance = new NightTimer();
+			}
+			return instance;
+		}
 
     private int tickCount = 0;
 

@@ -1,4 +1,3 @@
-
 package fnatnr.Enemys;
 
 import java.awt.Image;

@@ -13,6 +13,8 @@ public class GameWindow implements MainMenu.MenuListener {
 	}
 
 	public void start() {
+		nightsUnlocked = SaveData.loadNightsUnlocked();
+
 		frame = new JFrame("Five Nights at 290 Renfrew");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setResizable(true);
@@ -32,7 +34,10 @@ public class GameWindow implements MainMenu.MenuListener {
 	}
 
 	private void startNight(int night) {
-		GamePanel gamePanel = new GamePanel(night, () -> onNightComplete(night), () -> onGameOver());
+		GamePanel gamePanel = new GamePanel(
+				night,
+				() -> onNightComplete(night),
+				() -> SwingUtilities.invokeLater(this::showMainMenu));
 		frame.setContentPane(gamePanel);
 		frame.pack();
 		gamePanel.startGame();
@@ -42,6 +47,7 @@ public class GameWindow implements MainMenu.MenuListener {
 	private void onNightComplete(int night) {
 		if (night >= nightsUnlocked) {
 			nightsUnlocked = night + 1;
+			SaveData.saveNightsUnlocked(nightsUnlocked);
 		}
 		SwingUtilities.invokeLater(() -> {
 			mainMenu.setNightsUnlocked(nightsUnlocked);
@@ -49,18 +55,21 @@ public class GameWindow implements MainMenu.MenuListener {
 		});
 	}
 
-	private void onGameOver() {
-		SwingUtilities.invokeLater(() -> showMainMenu());
+	@Override
+	public void onNewGame() {
+		nightsUnlocked = 1;
+		SaveData.saveNightsUnlocked(1);
+		startNight(1);
 	}
 
 	@Override
-	public void onNightSelected(int night) {
+	public void onContinue(int night) {
 		startNight(night);
 	}
 
 	@Override
 	public void onSettingsClicked() {
-		JOptionPane.showMessageDialog(frame, "No Settings", "Settings", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(frame, "Settings", "Settings", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	@Override

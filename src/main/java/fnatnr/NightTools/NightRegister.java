@@ -1,4 +1,4 @@
-package fnatnr;
+package fnatnr.NightTools;
 
 public class NightRegister {
 

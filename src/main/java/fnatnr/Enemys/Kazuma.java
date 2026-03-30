@@ -21,7 +21,7 @@ public class Kazuma extends Enemy {
 
 	public Kazuma(String name, int agression, Room currentRoom,  GamePanel gamePanel) {
 		this.name = name;
-		this.agression = agression;
+		this.aggression = agression;
 		this.currentRoom = currentRoom;
 		this.gamePanel = gamePanel;
 		
@@ -52,7 +52,7 @@ public class Kazuma extends Enemy {
 		if (tickFrame >= ADVANCE_BLOCK) {
 			tickFrame = 0;
 			int rand = GameRandom.getInstance().nextInt(20);
-			if (rand < agression) {
+			if (rand < aggression) {
 				state = Math.min(4, state + 1);
 			}
 		}

@@ -11,7 +11,7 @@ public class PairEnemy extends Enemy {
 
 	public PairEnemy(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel) {
 		this.name = name;
-		this.agression = agression;
+		this.aggression = agression;
 		this.currentRoom = currentRoom;
 		this.homeRoom = currentRoom;
 		this.gamePanel = gamePanel;
