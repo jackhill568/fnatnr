@@ -20,7 +20,7 @@ public class Sink {
 	public void update() {
 		if (level < threshold)
 			level += increment;
-		if (level > threshold) {
+		if (level >= threshold) {
 			status = true;
 		} else {
 			status = false;

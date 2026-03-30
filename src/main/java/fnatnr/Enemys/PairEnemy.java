@@ -1,17 +1,19 @@
 package fnatnr.Enemys;
 
 import fnatnr.Room;
+import fnatnr.GamePanel;
 import fnatnr.GameRandom;
 
 public class PairEnemy extends Enemy {
 
 	private boolean paried = false;
 
-	public PairEnemy(String name, int agression, Room currentRoom) {
+	public PairEnemy(String name, int agression, Room currentRoom, GamePanel gamePanel) {
 		this.name = name;
 		this.agression = agression;
 		this.currentRoom = currentRoom;
 		this.homeRoom = currentRoom;
+		this.gamePanel = gamePanel; 
 	}
 
 	@Override

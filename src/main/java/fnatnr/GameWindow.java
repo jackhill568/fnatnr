@@ -32,7 +32,7 @@ public class GameWindow implements MainMenu.MenuListener {
 	}
 
 	private void startNight(int night) {
-		GamePanel gamePanel = new GamePanel(night, () -> onNightComplete(night));
+		GamePanel gamePanel = new GamePanel(night, () -> onNightComplete(night), () -> onGameOver());
 		frame.setContentPane(gamePanel);
 		frame.pack();
 		gamePanel.startGame();
@@ -47,6 +47,10 @@ public class GameWindow implements MainMenu.MenuListener {
 			mainMenu.setNightsUnlocked(nightsUnlocked);
 			showMainMenu();
 		});
+	}
+
+	private void onGameOver() {
+		SwingUtilities.invokeLater(() -> showMainMenu());
 	}
 
 	@Override

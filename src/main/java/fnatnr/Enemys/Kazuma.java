@@ -1,6 +1,7 @@
 package fnatnr.Enemys;
 
 import fnatnr.Room;
+import fnatnr.GamePanel;
 import fnatnr.GameRandom;
 
 import java.awt.Image;
@@ -18,10 +19,11 @@ public class Kazuma extends Enemy {
 
 	private boolean beingWatched = false;
 
-	public Kazuma(String name, int agression, Room currentRoom, Room[] rooms) {
+	public Kazuma(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel) {
 		this.name = name;
 		this.agression = agression;
 		this.currentRoom = currentRoom;
+		this.gamePanel = gamePanel;
 	}
 
 	public int getState() {

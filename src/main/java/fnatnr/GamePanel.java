@@ -30,6 +30,7 @@ public class GamePanel extends JPanel implements ActionListener {
 	private Sink sink;
 
 	private Room[] rooms;
+	private Room[] cameraRooms;
 	private int selectedCamera = 0;
 
 	private Image tableImage = new ImageIcon("assets/table.png").getImage();
@@ -38,10 +39,15 @@ public class GamePanel extends JPanel implements ActionListener {
 
 	public int night;
 	public Runnable onNightComplete;
+	public Runnable onGameOver;
 
-	public GamePanel(int night, Runnable onComplete) {
+	private NightTimer nightTimer = new NightTimer(3);
+	private boolean nightComplete = false;
+
+	public GamePanel(int night, Runnable onComplete, Runnable onGameOver) {
 		this.night = night;
 		this.onNightComplete = onComplete;
+		this.onGameOver = onGameOver;
 		setPreferredSize(new Dimension(1024, 768));
 		setBackground(Color.BLACK);
 		setFocusable(true);
@@ -53,11 +59,24 @@ public class GamePanel extends JPanel implements ActionListener {
 			}
 		});
 
-		this.sink = new Sink(50, 1, 1);
+		addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				handleMouseClick(e.getX(), e.getY());
+			}
+		});
+		
+		NightData data = NightRegister.get(night);
+
+		this.sink = new Sink(data.sink[0], data.sink[1], data.sink[2]);
 
 		createRooms();
-		createEnemys(sink);
+		createEnemys(data, sink);
 		gameLoop.start();
+	}
+
+	public boolean getDoorClosed() {
+		return leftDoorClosed;
 	}
 
 	private void createRooms() {
@@ -84,12 +103,29 @@ public class GamePanel extends JPanel implements ActionListener {
 		kazuma.setNeighbours(new Room[] { doorway, stairs });
 
 		rooms = new Room[] { victor, cayden, josh, nathan, jack, kazuma, hall, stairs, doorway, kitchen };
+		cameraRooms = new Room[] { victor, cayden, josh, nathan, jack, kazuma, hall, stairs };
 	}
 
-	private void createEnemys(Sink sink) {
+	private void createEnemys(NightData data, Sink sink) {
+
 		enemys = new ArrayList<>();
-		Enemy test = new ClassicEnemy("cheese", 10, rooms[2], rooms);
-		enemys.add(test);
+		
+		Enemy jack = new ClassicEnemy("Jack", data.enemyAgressions[0], rooms[4], rooms, this);
+		Enemy nathan = new ClassicEnemy("Nathan", data.enemyAgressions[1], rooms[3], rooms, this);
+		
+		Enemy cayden = new PairEnemy("Cayden", data.enemyAgressions[2], rooms[1],  this);
+		Enemy josh = new PairEnemy("Josh", data.enemyAgressions[3], rooms[2],  this);
+
+		Enemy kazuma = new Kazuma("Kazuma", data.enemyAgressions[4], rooms[5], rooms, this);
+
+		Enemy victor = new Victor("Victor", sink, rooms[9], this);
+
+		enemys.add(jack);
+		enemys.add(nathan);
+		enemys.add(cayden);
+		enemys.add(josh);
+		enemys.add(kazuma);
+		enemys.add(victor);
 	}
 
 	@Override
@@ -97,10 +133,17 @@ public class GamePanel extends JPanel implements ActionListener {
 		if (gameOver)
 			return;
 
+		sink.update();
 		for (Enemy enemy : enemys) {
 			enemy.chanceMove();
 		}
-		sink.update();
+
+		nightTimer.update();
+
+		if (nightTimer.isComplete()) {
+			triggerWin();
+			return;
+		}
 
 		repaint();
 	}
@@ -111,6 +154,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
 		if (gameOver) {
 			drawGameOver(g);
+			return;
+		} else if (nightComplete) {
+			drawGameWin(g);
 			return;
 		}
 
@@ -125,7 +171,6 @@ public class GamePanel extends JPanel implements ActionListener {
 				break;
 			case DOOR:
 				drawDoorway(g);
-				drawStatusBar(g);
 				break;
 			case CAMERAS:
 				drawCameras(g);
@@ -152,6 +197,12 @@ public class GamePanel extends JPanel implements ActionListener {
 		g.fillRect(0, 0, getWidth(), getHeight());
 		g.drawImage(doorImage, 0, 0, getWidth(), getHeight(), this);
 
+		for (Enemy enemy : enemys) {
+			if (enemy.getRoom().getName().equals("Doorway")) {
+				enemy.drawSprite(g);
+			}
+		}
+
 		g.setColor(leftDoorClosed ? Color.RED : Color.GREEN);
 		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.04)));
 		String status = leftDoorClosed ? "DOOR CLOSED" : "DOOR OPEN";
@@ -163,7 +214,7 @@ public class GamePanel extends JPanel implements ActionListener {
 		g.setColor(new Color(10, 30, 10));
 		g.fillRect(0, 0, getWidth(), getHeight());
 
-		Room room = rooms[selectedCamera];
+		Room room = cameraRooms[selectedCamera];
 		g.drawImage(room.getImage(), 0, 0, getWidth(), getHeight(), this);
 
 		g.setColor(Color.GREEN);
@@ -230,6 +281,13 @@ public class GamePanel extends JPanel implements ActionListener {
 				g.drawString("[C] Put Away Camera   [LEFT] [RIGHT] Switch Room", (int) (getWidth() * 0.01), textY);
 				break;
 		}
+
+		// draw time
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.025)));
+		String time = nightTimer.getTimeString();
+		int tw = g.getFontMetrics().stringWidth(time);
+		g.drawString(time, getWidth() - tw - (int) (getWidth() * 0.02), textY);
 	}
 
 	private void drawGameOver(Graphics g) {
@@ -247,6 +305,45 @@ public class GamePanel extends JPanel implements ActionListener {
 		String sub = "Got you: " + lastKiller;
 		int sw = g.getFontMetrics().stringWidth(sub);
 		g.drawString(sub, (getWidth() - sw) / 2, (int) (getHeight() * 0.55));
+
+		g.setColor(Color.GRAY);
+		g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.02)));
+		String prompt = "Click to continue";
+		int pw = g.getFontMetrics().stringWidth(prompt);
+		g.drawString(prompt, (getWidth() - pw) / 2, (int) (getHeight() * 0.7));
+	}
+
+	private void drawGameWin(Graphics g) {
+		g.setColor(Color.BLACK);
+		g.fillRect(0, 0, getWidth(), getHeight());
+
+		g.setColor(Color.YELLOW);
+		g.setFont(new Font("Monospaced", Font.BOLD, (int) (getHeight() * 0.08)));
+		String title = "SURVIVED";
+		int tw = g.getFontMetrics().stringWidth(title);
+		g.drawString(title, (getWidth() - tw) / 2, (int) (getHeight() * 0.35));
+
+		g.setColor(Color.WHITE);
+		g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.04)));
+		String sub = "Night " + night + " Complete";
+		int sw = g.getFontMetrics().stringWidth(sub);
+		g.drawString(sub, (getWidth() - sw) / 2, (int) (getHeight() * 0.48));
+
+		g.setColor(Color.GRAY);
+		g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.025)));
+		String time = "6:00 AM";
+		int tiw = g.getFontMetrics().stringWidth(time);
+		g.drawString(time, (getWidth() - tiw) / 2, (int) (getHeight() * 0.58));
+
+		if ((System.currentTimeMillis() / 700) % 2 == 0) {
+			g.setColor(Color.WHITE);
+		} else {
+			g.setColor(Color.GRAY);
+		}
+		g.setFont(new Font("Monospaced", Font.PLAIN, (int) (getHeight() * 0.02)));
+		String prompt = "Click to continue...";
+		int pw = g.getFontMetrics().stringWidth(prompt);
+		g.drawString(prompt, (getWidth() - pw) / 2, (int) (getHeight() * 0.72));
 	}
 
 	private void drawEnemies(Graphics g) {
@@ -287,14 +384,33 @@ public class GamePanel extends JPanel implements ActionListener {
 				break;
 			case KeyEvent.VK_LEFT:
 				if (currentScreen == Screen.CAMERAS)
-					selectedCamera = (selectedCamera - 1 + rooms.length) % rooms.length;
+					selectedCamera = (selectedCamera - 1 + cameraRooms.length) % cameraRooms.length;
 				break;
 			case KeyEvent.VK_RIGHT:
 				if (currentScreen == Screen.CAMERAS)
-					selectedCamera = (selectedCamera + 1) % rooms.length;
+					selectedCamera = (selectedCamera + 1) % cameraRooms.length;
+				break;
+			case KeyEvent.VK_:
+				if (gameOver || nightComplete) {
+					if (onNightComplete != null && nightComplete) {
+						SwingUtilities.invokeLater(onNightComplete::run);
+					} else {
+						SwingUtilities.invokeLater(onGameOver::run);
+					}
+				}
 				break;
 		}
 		repaint();
+	}
+
+	private void handleMouseClick(int mx, int my) {
+		if (gameOver || nightComplete) {
+			if (gameOver)
+				SwingUtilities.invokeLater(onGameOver::run);
+			else if (nightComplete)
+				SwingUtilities.invokeLater(onNightComplete::run);
+			return;
+		}
 	}
 
 	public void startGame() {
@@ -303,14 +419,17 @@ public class GamePanel extends JPanel implements ActionListener {
 
 	private String lastKiller = "";
 
-	private void triggerGameOver(String killerName) {
+	public void triggerGameOver(String killerName) {
 		gameOver = true;
 		lastKiller = killerName;
 		gameLoop.stop();
 		repaint();
 	}
 
-	public boolean isTaskComplete() {
-		return taskComplete;
+	private void triggerWin() {
+		nightComplete = true;
+		gameLoop.stop();
+		repaint();
 	}
+
 }
