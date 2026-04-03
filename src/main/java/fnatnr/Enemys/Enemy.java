@@ -10,11 +10,12 @@ import fnatnr.GamePanel;
 import fnatnr.GameRandom;
 
 import java.awt.Graphics;
+import java.awt.Image;
 
 public abstract class Enemy {
 
 	protected Room currentRoom;
-	protected int aggression; 
+	protected int aggression;
 	protected String name;
 
 	protected Room homeRoom;
@@ -25,50 +26,59 @@ public abstract class Enemy {
 
 	protected int tickFrame = GameRandom.getInstance().nextInt(20);
 
-public void nextRoom() {
-    Room[] neighbours = currentRoom.getNeighbours();
-    if (neighbours.length == 0) return;
+	protected Image killFrame;
 
-    if (GameRandom.getInstance().nextInt(20) < aggression - 5) {
-        currentRoom = neighbours[0];
-    } else {
-        currentRoom = neighbours[GameRandom.getInstance().nextInt(neighbours.length)]; 
-    }
-}
+	protected boolean moved = true;
+	protected int x;
+	protected int y;
 
-public void chanceMove() {
-    if (aggression == 0) return;
+	public void nextRoom() {
+		Room[] neighbours = currentRoom.getNeighbours();
+		if (neighbours.length == 0)
+			return;
 
-    tickFrame++;
+		if (GameRandom.getInstance().nextInt(20) < aggression - 5) {
+			currentRoom = neighbours[0];
+		} else {
+			currentRoom = neighbours[GameRandom.getInstance().nextInt(neighbours.length)];
+		}
+		moved = true;
+	}
 
-    float nightProgress = NightTimer.getInstance().getProgress(); 
-    int effectiveAggression = (int)(aggression + (nightProgress * 8));
-    effectiveAggression = Math.min(20, effectiveAggression); 
+	public void chanceMove() {
+		if (aggression == 0)
+			return;
 
-    if (currentRoom.getName().equals("Doorway") && gamePanel.getDoorClosed()) {
-        if (tickFrame > 10) {
-            tickFrame = 0;
-            currentRoom = homeRoom;
-        }
-        return;
-    }
+		tickFrame++;
 
-    int moveThreshold = Math.max(1, 40 - (effectiveAggression * 2));
-    if (tickFrame >= moveThreshold) {
-        tickFrame = 0;
-        nextRoom();
-        checkAttack();
-    }
-}
+		float nightProgress = NightTimer.getInstance().getProgress();
+		int effectiveAggression = (int) (aggression + (nightProgress * 8));
+		effectiveAggression = Math.min(20, effectiveAggression);
 
-protected void checkAttack() {
-    if (currentRoom.getName().equals("Kitchen")) {
-        attack();
-    }
-}
+		if (currentRoom.getName().equals("Doorway") && gamePanel.getDoorClosed()) {
+			if (tickFrame > 10) {
+				tickFrame = 0;
+				currentRoom = homeRoom;
+			}
+			return;
+		}
+
+		int moveThreshold = Math.max(1, 40 - (effectiveAggression * 2));
+		if (tickFrame >= moveThreshold) {
+			tickFrame = 0;
+			nextRoom();
+			checkAttack();
+		}
+	}
+
+	protected void checkAttack() {
+		if (currentRoom.getName().equals("Kitchen")) {
+			attack();
+		}
+	}
 
 	public void attack() {
-		this.gamePanel.triggerGameOver(this.name);
+		this.gamePanel.triggerGameOver(this);
 	}
 
 	public Room getRoom() {
@@ -83,8 +93,17 @@ protected void checkAttack() {
 		return this.name;
 	}
 
+	public Image getKillFrame() {
+		return killFrame;
+	}
+
 	public void drawSprite(Graphics g) {
 		EnemyRoomData data = this.spriteData.get(currentRoom);
-		g.drawImage(data.sprite, data.x, data.y, data.width, data.height, null);
+		if (moved) {
+			x = GameRandom.getInstance().nextInt(0, gamePanel.getWidth() - 100);
+			y = GameRandom.getInstance().nextInt(0, gamePanel.getHeight()-100);
+			moved = false;
+		}
+		g.drawImage(killFrame, x,  y, 200, 100, null);
 	}
 }

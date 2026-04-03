@@ -7,17 +7,20 @@ import javax.swing.ImageIcon;
 
 public class ClassicEnemy extends Enemy {
 
-	public ClassicEnemy(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel) {
-	this.name = name;
-	this.aggression = agression;
-	this.currentRoom = currentRoom;
-	this.homeRoom = currentRoom;
-	this.gamePanel = gamePanel;
+	public ClassicEnemy(String name, int agression, Room currentRoom, Room[] rooms, GamePanel gamePanel, String killFrame) {
+		this.name = name;
+		this.aggression = agression;
+		this.currentRoom = currentRoom;
+		this.homeRoom = currentRoom;
+		this.gamePanel = gamePanel;
+		this.killFrame = new ImageIcon(killFrame).getImage();
 
-	for (Room room : rooms)  {
-		this.spriteData.put(room, new EnemyRoomData(50, 50, 100, 100, new ImageIcon("assets/cheese.png").getImage()));
+
+
+		for (Room room : rooms) {
+			this.spriteData.put(room, new EnemyRoomData(50, 50, 100, 100, new ImageIcon("assets/cheese.png").getImage()));
+		}
+
 	}
-
- }
 
 }

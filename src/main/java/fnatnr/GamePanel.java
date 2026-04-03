@@ -2,6 +2,7 @@ package fnatnr;
 
 import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.ImageIcon;
 
 import fnatnr.Enemys.*;
 import fnatnr.NightTools.NightTimer;
@@ -18,6 +19,8 @@ public class GamePanel extends JPanel implements ActionListener {
 	private static final int TICK_RATE_MS = 1000;
 	private javax.swing.Timer gameLoop = new Timer(500, this);
 	private javax.swing.Timer renderLoop = new Timer(32, e -> repaint());
+
+	private Enemy lastKiller;
 
 	public enum Screen {
 		TABLE, CAMERAS, SINK, DOOR
@@ -113,8 +116,8 @@ public class GamePanel extends JPanel implements ActionListener {
 		Room kazuma = new Room("Kazuma Cove", "assets/rooms/kazumaRoom.png");
 		Room hall = new Room("Hall", "assets/rooms/hall.png");
 		Room stairs = new Room("Stairs", "assets/rooms/stairs.png");
-		Room doorway = new Room("Doorway", "assets/rooms/doorway.png");
-		Room kitchen = new Room("Kitchen", "assets/rooms/kitchen.png");
+		Room doorway = new Room("Doorway", "assets/rooms/doorwayOpen.png");
+		Room kitchen = new Room("Kitchen", "assets/rooms/table.png");
 
 		hall.setNeighbours(new Room[] { stairs, victor, cayden, josh, nathan, jack });
 		stairs.setNeighbours(new Room[] { doorway, hall, kazuma });
@@ -135,15 +138,15 @@ public class GamePanel extends JPanel implements ActionListener {
 
 		enemys = new ArrayList<>();
 
-		Enemy jack = new ClassicEnemy("Jack", data.enemyAgressions[0], rooms[4], rooms, this);
-		Enemy nathan = new ClassicEnemy("Nathan", data.enemyAgressions[1], rooms[3], rooms, this);
+		Enemy jack = new ClassicEnemy("Jack", data.enemyAgressions[0], rooms[4], rooms, this, "assets/Jack.png");
+		Enemy nathan = new ClassicEnemy("Nathan", data.enemyAgressions[1], rooms[3], rooms, this, "assets/Nathan.png");
 
-		Enemy cayden = new PairEnemy("Cayden", data.enemyAgressions[2], rooms[1], rooms, this);
-		Enemy josh = new PairEnemy("Josh", data.enemyAgressions[3], rooms[2], rooms, this);
+		Enemy cayden = new PairEnemy("Cayden", data.enemyAgressions[2], rooms[1], rooms, this, "assets/Cayden.png");
+		Enemy josh = new PairEnemy("Josh", data.enemyAgressions[3], rooms[2], rooms, this, "assets/Josh.png");
 
-		Enemy kazuma = new Kazuma("Kazuma", data.enemyAgressions[4], rooms[5], this);
+		Enemy kazuma = new Kazuma("Kazuma", data.enemyAgressions[4], rooms[5], this, "assets/Kazuma.png");
 
-		Enemy victor = new Victor("Victor", sink, rooms[9], this);
+		Enemy victor = new Victor("Victor", sink, rooms[9], this, "assets/Victor.png");
 
 		enemys.add(jack);
 		enemys.add(nathan);
@@ -178,7 +181,7 @@ public class GamePanel extends JPanel implements ActionListener {
 		super.paintComponent(g);
 
 		if (gameOver) {
-			renderer.drawGameOver(g);
+			renderer.drawGameOver(g, lastKiller);
 			return;
 		} else if (nightComplete) {
 			renderer.drawGameWin(g);
@@ -195,7 +198,7 @@ public class GamePanel extends JPanel implements ActionListener {
 				renderer.drawStatusBar(g);
 				break;
 			case DOOR:
-				renderer.drawDoorway(g);
+				renderer.drawDoorway(g, leftDoorClosed);
 				break;
 			case CAMERAS:
 				renderer.drawCameras(g);
@@ -259,11 +262,10 @@ public class GamePanel extends JPanel implements ActionListener {
 		requestFocusInWindow();
 	}
 
-	private String lastKiller = "";
 
-	public void triggerGameOver(String killerName) {
+	public void triggerGameOver(Enemy killer) {
 		gameOver = true;
-		lastKiller = killerName;
+		lastKiller = killer;
 		gameLoop.stop();
 		renderLoop.stop();
 		repaint();

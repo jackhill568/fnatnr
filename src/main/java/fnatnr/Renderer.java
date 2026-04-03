@@ -12,9 +12,10 @@ import java.awt.Font;
 
 public class Renderer {
 
-	private Image tableImage = new ImageIcon("assets/table.png").getImage();
+	private Image tableImage = new ImageIcon("assets/rooms/table.png").getImage();
 	private Image sinkImage = new ImageIcon("assets/sink.png").getImage();
-	private Image doorImage = new ImageIcon("assets/door.png").getImage();
+	private Image doorOpenImage = new ImageIcon("assets/rooms/doorwayOpen.jpg").getImage();
+	private Image doorClosedImage = new ImageIcon("assets/rooms/doorwayClosed.jpg").getImage();
 
 	private GamePanel gamePanel;
 
@@ -67,9 +68,9 @@ public class Renderer {
 		drawBackground(g, sinkImage);
 	}
 
-	public void drawDoorway(Graphics g) {
+	public void drawDoorway(Graphics g, boolean isClosed) {
 		rectFill(g, new Color(30, 20, 10));
-		drawBackground(g, doorImage);
+		drawBackground(g, (isClosed) ? doorClosedImage : doorOpenImage);
 
 		for (Enemy enemy : gamePanel.getEnemies()) {
 			if (enemy.getRoom().getName().equals("Doorway")) {
@@ -149,13 +150,14 @@ public class Renderer {
 		drawTime(g);
 	}
 
-	public void drawGameOver(Graphics g) {
+	public void drawGameOver(Graphics g, Enemy killer) {
 		rectFill(g, Color.BLACK);
+
+		drawBackground(g, killer.getKillFrame());
 
 		g.setColor(Color.RED);
 		g.setFont(scaledFont(Font.BOLD, 9));
-		String title = "GAME OVER";
-		drawCentred(g, title, 0.4f);
+		drawCentred(g, "KILLED BY: " +killer.getName(), 0.4f);
 
 		g.setColor(Color.GRAY);
 		g.setFont(scaledFont(Font.BOLD, 4));

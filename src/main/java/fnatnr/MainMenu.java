@@ -75,7 +75,7 @@ public class MainMenu extends JPanel implements MouseListener {
 		int btnX = (int) (getWidth() * 0.06);
 		int gap = (int) (getHeight() * 0.025);
 
-		int startY = (int) (getHeight() * 0.2);
+		int startY = (int) (getHeight() * 0.3);
 		for (int i = 0; i < TOTAL_NIGHTS; i++) {
 			nightButtons[i] = new Rectangle(btnX, startY + i * (btnH + gap), btnW, btnH);
 		}
